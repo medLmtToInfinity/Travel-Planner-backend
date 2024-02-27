@@ -1,5 +1,6 @@
 package net.medlmt.tpbackend.security;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -9,6 +10,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -22,18 +24,31 @@ import java.net.http.HttpRequest;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private final JwtEntryPoint authEntryPoint;
+
+    @Autowired
+    public SecurityConfig(JwtEntryPoint authEntryPoint) {
+        this.authEntryPoint = authEntryPoint;
+    }
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint(authEntryPoint)
+                )
+                .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests((authorize) -> authorize
-                                .requestMatchers(HttpMethod.GET).permitAll()
+                                .requestMatchers("/api/auth/**").permitAll()
                                 .anyRequest().authenticated()
                         )
-                .httpBasic(Customizer.withDefaults());
+                .httpBasic(Customizer.withDefaults())
+        ;
         return http.build();
     }
 
+    /*
     @Bean
     public UserDetailsService users() {
         UserDetails admin = User.builder()
@@ -50,6 +65,7 @@ public class SecurityConfig {
 
         return new InMemoryUserDetailsManager(admin, user);
     }
+     */
 
     @Bean
     public AuthenticationManager authenticationManager(

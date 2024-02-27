@@ -1,5 +1,6 @@
 package net.medlmt.tpbackend.controller;
 
+import net.medlmt.tpbackend.dto.LoginDto;
 import net.medlmt.tpbackend.dto.RegisterDto;
 import net.medlmt.tpbackend.entity.Role;
 import net.medlmt.tpbackend.entity.UserEntity;
@@ -9,6 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,6 +39,17 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @PostMapping("login")
+    public ResponseEntity<String> login(@RequestBody LoginDto loginDto) {
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                loginDto.getUsername(),
+                loginDto.getPassword()
+        ));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        return new ResponseEntity<>("You Are Logged in Successfully", HttpStatus.OK);
+
+    }
+
     @PostMapping("register")
     public ResponseEntity<String> register(@RequestBody RegisterDto registerDto) {
         if (userRepository.existsByUsername(registerDto.getUsername())) {
@@ -43,6 +59,7 @@ public class AuthController {
         UserEntity user = new UserEntity();
         user.setUsername(registerDto.getUsername());
         user.setPassword(passwordEncoder.encode((registerDto.getPassword())));
+        user.setEmail("xyz@example.com");
 
         Role roles = roleRepository.findByName("USER").get();
         user.setRoles(Collections.singletonList(roles));
